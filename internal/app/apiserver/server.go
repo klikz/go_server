@@ -83,7 +83,7 @@ func (s *server) configureRouter() {
 
 	s.router.HandleFunc("/production/lines", s.handleGetLines()).Methods("POST")
 	s.router.HandleFunc("/production/defects/types", s.handleGetDefectsTypes()).Methods("POST")
-	s.router.HandleFunc("/production/defects/types/delete", s.handleAddDefetctTypes()).Methods("POST")
+	s.router.HandleFunc("/production/defects/types/delete", s.handleDeleteDefectsTypes()).Methods("POST")
 	s.router.HandleFunc("/production/defects/types/add", s.handleAddDefetctTypes()).Methods("POST")
 
 	s.router.Use(s.setRequestID)

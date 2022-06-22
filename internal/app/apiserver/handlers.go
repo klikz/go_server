@@ -26,13 +26,6 @@ func (s *server) handleGetByDateSerial() http.HandlerFunc {
 }
 
 func (s *server) handleByDateModels() http.HandlerFunc {
-	type request struct {
-		Date1 string `json:"date1"`
-		Date2 string `json:"date2"`
-		Token string `json:"token"`
-		Line  int    `json:"line"`
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u = r.Context().Value(ctxKeyUser).(*model.Request)
 		result, err := s.store.User().GetByDateModels(u.Date1, u.Date2, u.Line)
@@ -156,11 +149,6 @@ func (s *server) handlegePackingtLast() http.HandlerFunc {
 }
 
 func (s *server) handleRegister() http.HandlerFunc {
-	type request struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := &model.User{}
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
