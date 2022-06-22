@@ -90,7 +90,7 @@ func (s *server) configureRouter() {
 	s.router.Use(s.logRequest)
 
 	register := s.router.PathPrefix("/").Subrouter()
-	// register.Use(s.authRegister)
+	register.Use(s.authRegister)
 	register.HandleFunc("/register", s.handleRegister()).Methods("POST")
 
 	s.router.HandleFunc("/login", s.handleLogin()).Methods("POST")
