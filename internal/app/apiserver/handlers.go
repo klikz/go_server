@@ -11,6 +11,17 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+func (s *server) handleGetRemont() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		result, err := s.store.User().GetRemont()
+		if err != nil {
+			fmt.Println("handleToday err: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+		}
+		s.respond(w, r, http.StatusOK, result)
+	}
+}
+
 func (s *server) handleGetByDateSerial() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("ctx value: ", r.Context().Value(ctxKeyUser))

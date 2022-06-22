@@ -95,6 +95,51 @@ func CheckLaboratory(serial string) (string, error) {
 	fmt.Println("Laboratory: ", string(body))
 	return string(body), nil
 }
+
+func (r *UserRepository) GetRemont() (interface{}, error) {
+
+	type Remont struct {
+		ID         int    `json:"id"`
+		Serial     string `json:"serial"`
+		Vaqt       string `json:"vaqt"`
+		Checkpoint string `json:"checkpoint"`
+		Model      string `json:"model"`
+		Defect     string `json:"defect"`
+	}
+
+	rows, err := r.store.db.Query(fmt.Sprintf(`
+	select r.id, r.serial, r."input" as vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
+	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id
+	 `))
+	if err != nil {
+		fmt.Println("GetRemont err: ", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+	var list []Remont
+
+	for rows.Next() {
+		var comp Remont
+		if err := rows.Scan(&comp.ID,
+			&comp.Serial,
+			&comp.Vaqt,
+			&comp.Checkpoint,
+			&comp.Model,
+			&comp.Defect); err != nil {
+			fmt.Println("GetRemont2 err: ", err)
+			return nil, err
+		}
+		list = append(list, comp)
+	}
+	if err = rows.Err(); err != nil {
+		fmt.Println("GetRemont3 err: ", err)
+		return list, err
+	}
+
+	return list, nil
+}
+
 func (r *UserRepository) GetLines() (interface{}, error) {
 
 	type Lines struct {

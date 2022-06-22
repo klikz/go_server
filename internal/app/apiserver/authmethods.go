@@ -116,14 +116,14 @@ func (s *server) authReport(next http.Handler) http.Handler {
 		token, err := jwt.ParseWithClaims(req.Token, claims, func(token *jwt.Token) (interface{}, error) {
 			return Secret_key, nil
 		})
-		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// c.JSON(http.StatusOK, claims)
-		} else {
+		if err != nil {
+			fmt.Println("token parse error: ", err)
 			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
 			return
 		}
-		if err != nil {
-			fmt.Println("authComponents FindByEmail err: ", err)
+		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// c.JSON(http.StatusOK, claims)
+		} else {
 			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
 			return
 		}
