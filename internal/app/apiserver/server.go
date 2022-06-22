@@ -67,6 +67,7 @@ func (s *server) configureRouter() {
 	reports.HandleFunc("/report/bydate/models", s.handleByDateModels()).Methods("POST")
 	reports.HandleFunc("/report/bydate/models/serial", s.handleGetByDateSerial()).Methods("POST")
 
+	//routes for only production processes
 	s.router.HandleFunc("/production/last", s.handlegetLast()).Methods("POST")
 	s.router.HandleFunc("/production/status", s.handlegeGetStatus()).Methods("POST")
 	s.router.HandleFunc("/production/today", s.handleToday()).Methods("POST")
