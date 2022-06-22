@@ -59,7 +59,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) configureRouter() {
-
+	//for reports read only permission
 	reports := s.router.PathPrefix("/").Subrouter()
 	reports.Use(s.authReport)
 
