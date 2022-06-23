@@ -6,6 +6,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type Role struct {
+	ID int
+}
+
 type Request struct {
 	Date1 string `json:"date1"`
 	Date2 string `json:"date2"`
@@ -13,7 +17,12 @@ type Request struct {
 	Line  int    `json:"line"`
 }
 
-// User ...
+type TokenPerson struct {
+	Name string
+	Item int
+	Role string
+}
+
 type User struct {
 	ID                int    `json:"id"`
 	Email             string `json:"email"`

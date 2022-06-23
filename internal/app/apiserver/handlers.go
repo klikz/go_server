@@ -11,12 +11,30 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+func (s *server) handleUpdateRemont() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var u = r.Context().Value(ctxKeyUser).(*model.TokenPerson)
+		_, err := s.store.User().UpdateRemont(u.Name, u.Role, u.Item)
+		fmt.Println("auth errors: ", err)
+		if err != nil {
+			fmt.Println("handleToday err: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+		sendData := &respondData{
+			Result: "ok",
+		}
+		s.respond(w, r, http.StatusOK, sendData)
+	}
+}
+
 func (s *server) handleGetRemont() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		result, err := s.store.User().GetRemont()
 		if err != nil {
 			fmt.Println("handleToday err: ", err)
 			s.error(w, r, http.StatusBadRequest, err)
+			return
 		}
 		s.respond(w, r, http.StatusOK, result)
 	}
@@ -31,6 +49,7 @@ func (s *server) handleGetByDateSerial() http.HandlerFunc {
 		if err != nil {
 			fmt.Println("handleToday err: ", err)
 			s.error(w, r, http.StatusBadRequest, err)
+			return
 		}
 		s.respond(w, r, http.StatusOK, result)
 	}
@@ -102,12 +121,14 @@ func (s *server) handlePackingSerialInput() http.HandlerFunc {
 		fmt.Println("serial: ", req.Serial, "packing", req.Packing)
 		if req.Packing == req.Serial {
 			fmt.Println("serial bir xil")
-			s.error(w, r, http.StatusBadRequest, errors.New("serial bir xil"))
+			s.error(w, r, http.StatusBadRequest, errors.New("serial xato"))
+			return
 		}
 
 		result, err := s.store.User().PackingSerialInput(req.Serial, req.Packing)
 		if err != nil {
 			s.error(w, r, http.StatusBadRequest, err)
+
 		}
 		s.respond(w, r, http.StatusOK, result)
 	}

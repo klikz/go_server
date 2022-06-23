@@ -95,6 +95,44 @@ func CheckLaboratory(serial string) (string, error) {
 	fmt.Println("Laboratory: ", string(body))
 	return string(body), nil
 }
+func (r *UserRepository) UpdateRemont(name, role string, id int) (interface{}, error) {
+
+	check, err := r.store.db.Query(fmt.Sprintf(`
+	select id from routes r where remont_update = '%s'
+	 `, role))
+
+	if err != nil {
+		fmt.Println("GetRemont err: ", err)
+		return nil, err
+	}
+
+	defer check.Close()
+	var accept []model.Role
+
+	for check.Next() {
+		var comp model.Role
+		if err := check.Scan(&comp.ID); err != nil {
+			fmt.Println("UpdateRemont err: ", err)
+			return nil, err
+		}
+		accept = append(accept, comp)
+	}
+	if accept == nil {
+		return nil, errors.New("auth error")
+	}
+
+	rows, err := r.store.db.Query(fmt.Sprintf(`
+	update remont set status = 0, person_id = '%s', "output" = now() where id = %d
+	 `, name, id))
+	if err != nil {
+		fmt.Println("GetRemont err: ", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	return nil, nil
+}
 
 func (r *UserRepository) GetRemont() (interface{}, error) {
 
@@ -108,8 +146,8 @@ func (r *UserRepository) GetRemont() (interface{}, error) {
 	}
 
 	rows, err := r.store.db.Query(fmt.Sprintf(`
-	select r.id, r.serial, r."input" as vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
-	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id
+	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY HH24:MI') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
+	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id order by r."input"
 	 `))
 	if err != nil {
 		fmt.Println("GetRemont err: ", err)
@@ -287,15 +325,15 @@ func (r *UserRepository) PackingSerialInput(serial, packing string) (interface{}
 
 	res, err := CheckLaboratory(serial)
 	if err != nil {
-		fmt.Println("PackingSerialInput1 err: ", err)
-		return nil, nil
+		fmt.Println("Checklaboratory err: ", err)
+		return nil, errors.New("check laboratory err")
 	}
 
 	s := string(res)
 	data := Laboratory{}
 	json.Unmarshal([]byte(s), &data)
 	if data.Result == "No data" {
-		return "", errors.New("laboratoriyada muammo")
+		return nil, errors.New("laboratoriyada muammo")
 	}
 	type ModelId struct {
 		id int
@@ -446,7 +484,7 @@ func (r *UserRepository) SerialInput(line int, serial string) (interface{}, erro
 				return nil, err
 			}
 			fmt.Println("from raspberry: ", req)
-			return nil, errors.New("Sborkada reg qilinmagan")
+			return nil, errors.New("sborkada reg qilinmagan")
 		}
 		// defer result.Close()
 		fmt.Println("check sborka in ppu result: ", check)

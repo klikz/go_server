@@ -27,4 +27,5 @@ type UserRepository interface {
 	GetByDateModels(string, string, int) (interface{}, error)
 	GetByDateSerial(string, string) (interface{}, error)
 	GetRemont() (interface{}, error)
+	UpdateRemont(string, string, int) (interface{}, error)
 }

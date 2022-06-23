@@ -61,12 +61,16 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *server) configureRouter() {
 	//for reports read only permission
 	reports := s.router.PathPrefix("/").Subrouter()
+	remont := s.router.PathPrefix("/").Subrouter()
 	reports.Use(s.authReport)
+	remont.Use(s.authRemont)
 
 	reports.HandleFunc("/report/bydate", s.handleGetByDate()).Methods("POST")
 	reports.HandleFunc("/report/bydate/models", s.handleByDateModels()).Methods("POST")
 	reports.HandleFunc("/report/bydate/models/serial", s.handleGetByDateSerial()).Methods("POST")
 	reports.HandleFunc("/report/remont", s.handleGetRemont()).Methods("POST")
+
+	remont.HandleFunc("/report/remont/update", s.handleUpdateRemont()).Methods("POST")
 
 	//routes for only production processes
 	s.router.HandleFunc("/production/last", s.handlegetLast()).Methods("POST")
