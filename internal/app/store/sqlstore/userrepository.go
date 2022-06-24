@@ -145,10 +145,61 @@ func (r *UserRepository) GetRemont() (interface{}, error) {
 		Defect     string `json:"defect"`
 	}
 
+	currentTime := time.Now()
+
 	rows, err := r.store.db.Query(fmt.Sprintf(`
-	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY HH24:MI') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
-	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id order by r."input"
-	 `))
+	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
+	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id and r.input::date=to_date('%s', 'YYYY-MM-DD')  order by r."input"
+	 `, currentTime))
+	if err != nil {
+		fmt.Println("GetRemont err: ", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+	var list []Remont
+
+	for rows.Next() {
+		var comp Remont
+		if err := rows.Scan(&comp.ID,
+			&comp.Serial,
+			&comp.Vaqt,
+			&comp.Checkpoint,
+			&comp.Model,
+			&comp.Defect); err != nil {
+			fmt.Println("GetRemont2 err: ", err)
+			return nil, err
+		}
+		list = append(list, comp)
+	}
+	if err = rows.Err(); err != nil {
+		fmt.Println("GetRemont3 err: ", err)
+		return list, err
+	}
+
+	return list, nil
+}
+
+func (r *UserRepository) GetRemontByDate(date1, date2 string) (interface{}, error) {
+
+	type Remont struct {
+		ID         int    `json:"id"`
+		Serial     string `json:"serial"`
+		Vaqt       string `json:"vaqt"`
+		Checkpoint string `json:"checkpoint"`
+		Model      string `json:"model"`
+		Defect     string `json:"defect"`
+	}
+
+	rows, err := r.store.db.Query(fmt.Sprintf(`
+	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
+	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id and r."input"::date>=to_date('%s', 'YYYY-MM-DD') and r."input"::date<=to_date('%s', 'YYYY-MM-DD')  order by r."input"
+	 `, date1, date2))
+
+	fmt.Println(fmt.Sprintf(`
+	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
+	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id and r."input"::date>=to_date('%s', 'YYYY-MM-DD') and r."input"::date<=to_date('%s', 'YYYY-MM-DD')  order by r."input"
+	 `, date1, date2))
 	if err != nil {
 		fmt.Println("GetRemont err: ", err)
 		return nil, err
@@ -229,6 +280,63 @@ func (r *UserRepository) AddDefectsTypes(id int, name string) (interface{}, erro
 	defer rows.Close()
 	return nil, nil
 }
+
+func (r *UserRepository) AddDefects(u *model.OtkAddDefectParsed) (interface{}, error) {
+
+	var accept model.Role
+	err := r.store.db.QueryRow(fmt.Sprintf(`
+	select id from routes r where add_defects = '%s'
+	 `, u.Role)).Scan(&accept.ID)
+	// check, err := r.store.db.Query(fmt.Sprintf(`
+	// select id from routes r where add_defects = '%s'
+	//  `, u.Role))
+	fmt.Println(fmt.Sprintf(`
+	select id from routes r where add_defects = '%s'
+	 `, u.Role))
+	if err != nil {
+		fmt.Println("AddDefects err: ", err)
+		return nil, errors.New("auth error")
+	}
+
+	// defer check.Close()
+	// var accept model.Role
+
+	// for check.Next() {
+	// 	var comp model.Role
+	// 	if err := check.Scan(&comp.ID); err != nil {
+	// 		fmt.Println("AddDefects err: ", err)
+	// 		return nil, err
+	// 	}
+	// 	accept = append(accept, comp)
+	// }
+	fmt.Println("u.Role: ", u.Role, "accept: ", accept.ID)
+
+	temp := u.Serial[0:6]
+	type Model_ID struct {
+		ID int
+	}
+	var id Model_ID
+	err = r.store.db.QueryRow("select m.id from models m where m.code = $1", temp).Scan(&id.ID)
+	fmt.Println("select m.id  from models m where m.code = '$1'", temp, "    ", id.ID)
+	if err != nil {
+		fmt.Println("GetStatus err: ", errors.New("serial xato"))
+		return nil, errors.New("serial xato")
+	}
+	fmt.Println("ID: ", id.ID)
+	// if id.ID == 0 {
+	// 	return nil, errors.New("serial xato")
+	// }
+
+	rows, err := r.store.db.Query("insert into remont (serial, person_id, checkpoint_id, model_id, defect_id) values ($1, $2, $3, $4, $5)", u.Serial, u.Name, u.Checkpoint, id.ID, u.Defect)
+	if err != nil {
+		fmt.Println("Adddefects err: ", err)
+		return nil, err
+
+	}
+	defer rows.Close()
+	return nil, nil
+}
+
 func (r *UserRepository) GetDefectsTypes() (interface{}, error) {
 
 	type defectsTypes struct {
