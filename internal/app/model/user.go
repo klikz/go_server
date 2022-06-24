@@ -10,6 +10,21 @@ type Role struct {
 	ID int
 }
 
+type OtkAddDefect struct {
+	Serial     string
+	Checkpoint int
+	Defect     int
+	Token      string
+}
+
+type OtkAddDefectParsed struct {
+	Serial     string
+	Checkpoint int
+	Defect     int
+	Role       string
+	Name       string
+}
+
 type Request struct {
 	Date1 string `json:"date1"`
 	Date2 string `json:"date2"`

@@ -23,9 +23,11 @@ type UserRepository interface {
 	GetDefectsTypes() (interface{}, error)
 	DeleteDefectsTypes(int) (interface{}, error)
 	AddDefectsTypes(int, string) (interface{}, error)
+	AddDefects(*model.OtkAddDefectParsed) (interface{}, error)
 	GetByDate(string, string, int) (interface{}, error)
 	GetByDateModels(string, string, int) (interface{}, error)
 	GetByDateSerial(string, string) (interface{}, error)
 	GetRemont() (interface{}, error)
+	GetRemontByDate(string, string) (interface{}, error)
 	UpdateRemont(string, string, int) (interface{}, error)
 }

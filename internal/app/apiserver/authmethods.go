@@ -168,3 +168,38 @@ func (s *server) authRemont(next http.Handler) http.Handler {
 
 	})
 }
+
+func (s *server) authOtkAddDefect(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		req := &model.OtkAddDefect{}
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			fmt.Println("error in decode json: ", r.Body, "errror: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+		claims := jwt.MapClaims{}
+		token, err := jwt.ParseWithClaims(req.Token, claims, func(token *jwt.Token) (interface{}, error) {
+			return Secret_key, nil
+		})
+		if err != nil {
+			fmt.Println("token parse error: ", err)
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
+			return
+		}
+		person := &model.OtkAddDefectParsed{}
+		person.Checkpoint = req.Checkpoint
+		person.Defect = req.Defect
+		person.Serial = req.Serial
+
+		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			person.Name = fmt.Sprint(claims["email"])
+			person.Role = fmt.Sprint(claims["role"])
+		} else {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKeyUser, person)))
+
+	})
+}

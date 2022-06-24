@@ -28,6 +28,19 @@ func (s *server) handleUpdateRemont() http.HandlerFunc {
 	}
 }
 
+func (s *server) handleGetRemontByDate() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var u = r.Context().Value(ctxKeyUser).(*model.Request)
+		result, err := s.store.User().GetRemontByDate(u.Date1, u.Date2)
+		if err != nil {
+			fmt.Println("handleToday err: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+		s.respond(w, r, http.StatusOK, result)
+	}
+}
+
 func (s *server) handleGetRemont() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		result, err := s.store.User().GetRemont()
@@ -460,6 +473,25 @@ func (s *server) handleAddDefetctTypes() http.HandlerFunc {
 
 			fmt.Println("handleSectorBalance err: ", err)
 			s.error(w, r, http.StatusBadRequest, err)
+		}
+		sendData := &respondData{
+			Result: "ok",
+		}
+		s.respond(w, r, http.StatusCreated, sendData)
+	}
+}
+
+func (s *server) handleAddDefets() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var u = r.Context().Value(ctxKeyUser).(*model.OtkAddDefectParsed)
+
+		_, err := s.store.User().AddDefects(u) //serial, name string, checkpoint, defect int
+
+		if err != nil {
+
+			fmt.Println("handleSectorBalance err: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
 		}
 		sendData := &respondData{
 			Result: "ok",

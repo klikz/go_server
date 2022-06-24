@@ -60,15 +60,20 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) configureRouter() {
 	//for reports read only permission
+	// checkToken := s.router.PathPrefix("/").Subrouter()
 	reports := s.router.PathPrefix("/").Subrouter()
 	remont := s.router.PathPrefix("/").Subrouter()
+	authOtkAddDefect := s.router.PathPrefix("/").Subrouter()
+
 	reports.Use(s.authReport)
 	remont.Use(s.authRemont)
+	authOtkAddDefect.Use(s.authOtkAddDefect)
 
 	reports.HandleFunc("/report/bydate", s.handleGetByDate()).Methods("POST")
 	reports.HandleFunc("/report/bydate/models", s.handleByDateModels()).Methods("POST")
 	reports.HandleFunc("/report/bydate/models/serial", s.handleGetByDateSerial()).Methods("POST")
 	reports.HandleFunc("/report/remont", s.handleGetRemont()).Methods("POST")
+	reports.HandleFunc("/report/remont/bydate", s.handleGetRemontByDate()).Methods("POST")
 
 	remont.HandleFunc("/report/remont/update", s.handleUpdateRemont()).Methods("POST")
 
@@ -90,13 +95,14 @@ func (s *server) configureRouter() {
 	s.router.HandleFunc("/production/defects/types", s.handleGetDefectsTypes()).Methods("POST")
 	s.router.HandleFunc("/production/defects/types/delete", s.handleDeleteDefectsTypes()).Methods("POST")
 	s.router.HandleFunc("/production/defects/types/add", s.handleAddDefetctTypes()).Methods("POST")
+	authOtkAddDefect.HandleFunc("/production/defects/add", s.handleAddDefets()).Methods("POST")
 
 	s.router.Use(s.setRequestID)
 	s.router.Use(s.logRequest)
 
 	//route for registering
 	register := s.router.PathPrefix("/").Subrouter()
-	register.Use(s.authRegister)
+	// register.Use(s.authRegister)
 	register.HandleFunc("/register", s.handleRegister()).Methods("POST")
 
 	s.router.HandleFunc("/login", s.handleLogin()).Methods("POST")
