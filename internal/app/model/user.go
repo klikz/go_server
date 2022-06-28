@@ -33,9 +33,7 @@ type Request struct {
 }
 
 type TokenPerson struct {
-	Name string
-	Item int
-	Role string
+	Item int `json:"id"`
 }
 
 type User struct {
@@ -58,6 +56,13 @@ type RegisterUser struct {
 	Token       string `json:"token"`
 	Regemail    string `json:"regemail"`
 	Regpassword string `json:"regpassword"`
+}
+
+type ReqBody struct {
+	Body  string
+	Check bool
+	Role  string
+	Name  string
 }
 
 // Validate ...

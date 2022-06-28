@@ -12,14 +12,21 @@ import (
 
 func (s *server) handleRegister() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var u = r.Context().Value(ctxKeyUser).(*model.ReqBody)
+		if u.Check {
+			_, err := s.store.User().CheckRole("handlegetremontbydate", u.Role)
+			if err != nil {
+				s.error(w, r, http.StatusBadRequest, err)
+				return
+			}
+		}
 		req := &model.User{}
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-			fmt.Println("error in decode json: ", r.Body)
+		if err := json.Unmarshal([]byte(u.Body), &req); err != nil {
+			fmt.Println("handleGetRemontByDate error decode: ", u.Body, "error: ", err)
 			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
-		// var u = r.Context().Value(ctxKeyUser).(*model.User)
-		// fmt.Println("register")
+
 		if err := s.store.User().Create(req); err != nil {
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return

@@ -95,32 +95,7 @@ func CheckLaboratory(serial string) (string, error) {
 	fmt.Println("Laboratory: ", string(body))
 	return string(body), nil
 }
-func (r *UserRepository) UpdateRemont(name, role string, id int) (interface{}, error) {
-
-	check, err := r.store.db.Query(fmt.Sprintf(`
-	select id from routes r where remont_update = '%s'
-	 `, role))
-
-	if err != nil {
-		fmt.Println("GetRemont err: ", err)
-		return nil, err
-	}
-
-	defer check.Close()
-	var accept []model.Role
-
-	for check.Next() {
-		var comp model.Role
-		if err := check.Scan(&comp.ID); err != nil {
-			fmt.Println("UpdateRemont err: ", err)
-			return nil, err
-		}
-		accept = append(accept, comp)
-	}
-	if accept == nil {
-		return nil, errors.New("auth error")
-	}
-
+func (r *UserRepository) UpdateRemont(name string, id int) (interface{}, error) {
 	rows, err := r.store.db.Query(fmt.Sprintf(`
 	update remont set status = 0, person_id = '%s', "output" = now() where id = %d
 	 `, name, id))
@@ -134,7 +109,63 @@ func (r *UserRepository) UpdateRemont(name, role string, id int) (interface{}, e
 	return nil, nil
 }
 
+func (r *UserRepository) CheckRole(route, role string) (int, error) {
+
+	var accept model.Role
+	err := r.store.db.QueryRow(fmt.Sprintf(`
+	select id from routes r where %s = '%s'
+	 `, route, role)).Scan(&accept.ID)
+	if err != nil {
+		fmt.Println("AddDefects err: ", err)
+		return 0, errors.New("auth error")
+	}
+	return accept.ID, nil
+}
+
 func (r *UserRepository) GetRemont() (interface{}, error) {
+
+	type Remont struct {
+		ID         int    `json:"id"`
+		Serial     string `json:"serial"`
+		Vaqt       string `json:"vaqt"`
+		Checkpoint string `json:"checkpoint"`
+		Model      string `json:"model"`
+		Defect     string `json:"defect"`
+	}
+
+	rows, err := r.store.db.Query(fmt.Sprintf(`
+	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
+	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id order by r."input"
+	 `))
+	if err != nil {
+		fmt.Println("GetRemont err: ", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+	var list []Remont
+
+	for rows.Next() {
+		var comp Remont
+		if err := rows.Scan(&comp.ID,
+			&comp.Serial,
+			&comp.Vaqt,
+			&comp.Checkpoint,
+			&comp.Model,
+			&comp.Defect); err != nil {
+			fmt.Println("GetRemont2 err: ", err)
+			return nil, err
+		}
+		list = append(list, comp)
+	}
+	if err = rows.Err(); err != nil {
+		fmt.Println("GetRemont3 err: ", err)
+		return list, err
+	}
+
+	return list, nil
+}
+func (r *UserRepository) GetRemontToday() (interface{}, error) {
 
 	type Remont struct {
 		ID         int    `json:"id"`
@@ -281,53 +312,19 @@ func (r *UserRepository) AddDefectsTypes(id int, name string) (interface{}, erro
 	return nil, nil
 }
 
-func (r *UserRepository) AddDefects(u *model.OtkAddDefectParsed) (interface{}, error) {
-
-	var accept model.Role
-	err := r.store.db.QueryRow(fmt.Sprintf(`
-	select id from routes r where add_defects = '%s'
-	 `, u.Role)).Scan(&accept.ID)
-	// check, err := r.store.db.Query(fmt.Sprintf(`
-	// select id from routes r where add_defects = '%s'
-	//  `, u.Role))
-	fmt.Println(fmt.Sprintf(`
-	select id from routes r where add_defects = '%s'
-	 `, u.Role))
-	if err != nil {
-		fmt.Println("AddDefects err: ", err)
-		return nil, errors.New("auth error")
-	}
-
-	// defer check.Close()
-	// var accept model.Role
-
-	// for check.Next() {
-	// 	var comp model.Role
-	// 	if err := check.Scan(&comp.ID); err != nil {
-	// 		fmt.Println("AddDefects err: ", err)
-	// 		return nil, err
-	// 	}
-	// 	accept = append(accept, comp)
-	// }
-	fmt.Println("u.Role: ", u.Role, "accept: ", accept.ID)
+func (r *UserRepository) AddDefects(u *model.OtkAddDefect, name string) (interface{}, error) {
 
 	temp := u.Serial[0:6]
 	type Model_ID struct {
 		ID int
 	}
 	var id Model_ID
-	err = r.store.db.QueryRow("select m.id from models m where m.code = $1", temp).Scan(&id.ID)
-	fmt.Println("select m.id  from models m where m.code = '$1'", temp, "    ", id.ID)
+	err := r.store.db.QueryRow("select m.id from models m where m.code = $1", temp).Scan(&id.ID)
 	if err != nil {
 		fmt.Println("GetStatus err: ", errors.New("serial xato"))
 		return nil, errors.New("serial xato")
 	}
-	fmt.Println("ID: ", id.ID)
-	// if id.ID == 0 {
-	// 	return nil, errors.New("serial xato")
-	// }
-
-	rows, err := r.store.db.Query("insert into remont (serial, person_id, checkpoint_id, model_id, defect_id) values ($1, $2, $3, $4, $5)", u.Serial, u.Name, u.Checkpoint, id.ID, u.Defect)
+	rows, err := r.store.db.Query("insert into remont (serial, person_id, checkpoint_id, model_id, defect_id) values ($1, $2, $3, $4, $5)", u.Serial, name, u.Checkpoint, id.ID, u.Defect)
 	if err != nil {
 		fmt.Println("Adddefects err: ", err)
 		return nil, err
