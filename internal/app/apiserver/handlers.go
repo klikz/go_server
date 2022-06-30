@@ -412,3 +412,31 @@ func (s *server) handleComponents() http.HandlerFunc {
 		s.respond(w, r, http.StatusOK, compontnts)
 	}
 }
+func (s *server) handleGetInfoBySerial() http.HandlerFunc {
+	type Serial struct {
+		Serial string `json"serial"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		var u = r.Context().Value(ctxKeyUser).(*model.ReqBody)
+		if u.Check {
+			_, err := s.store.User().CheckRole("handlegetinfobyserial", u.Role)
+			if err != nil {
+				s.error(w, r, http.StatusBadRequest, err)
+				return
+			}
+		}
+		req := &Serial{}
+		if err := json.Unmarshal([]byte(u.Body), &req); err != nil {
+			fmt.Println("handleGetInfoBySerial error decode: ", u.Body, "error: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+		compontnts, err := s.store.User().GetInfoBySerial(req.Serial)
+		if err != nil {
+			fmt.Println("handleGetInfoBySerial err: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+		s.respond(w, r, http.StatusOK, compontnts)
+	}
+}

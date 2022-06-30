@@ -32,4 +32,5 @@ type UserRepository interface {
 	GetRemontByDate(string, string) (interface{}, error)
 	UpdateRemont(string, int) (interface{}, error)
 	CheckRole(string, string) (int, error)
+	GetInfoBySerial(string) (interface{}, error)
 }

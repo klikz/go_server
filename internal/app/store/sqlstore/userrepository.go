@@ -35,47 +35,39 @@ func setPin(param, addres string) (interface{}, error) {
 	}
 	return string(body), nil
 }
-
-func (r *UserRepository) debitFromLine(modelId, lineId int) (interface{}, error) {
+func (r *UserRepository) debitFromLine(modelId, lineId int) error {
 	type Debit struct {
 		Component_id int
 		Quantity     float64
 	}
-	fmt.Println("debit modelId: ", modelId, "debit lineId: ", lineId)
-
 	rows, err := r.store.db.Query(fmt.Sprintf("select t.component_id, t.quantity  from models.\"%d\" t, public.components c where t.component_id = c.id and c.\"checkpoint\" = %d", modelId, lineId))
 	if err != nil {
 		fmt.Println("debitFromLinel err: ", err)
-		return nil, err
+		return err
 	}
 	defer rows.Close()
-
 	var debits []Debit
-	// fmt.Println(rows)
-
 	for rows.Next() {
 		var debit Debit
 		if err := rows.Scan(&debit.Component_id, &debit.Quantity); err != nil {
 			fmt.Println("debitFromLine2 err: ", err)
-			return debits, err
+			return err
 		}
 		debits = append(debits, debit)
 	}
 	if err = rows.Err(); err != nil {
 		fmt.Println("debitFromLine3 err: ", err)
-		return debits, err
+		return err
 	}
 	for _, x := range debits {
 		_, err := r.store.db.Exec(fmt.Sprintf("update checkpoints.\"%d\" set quantity = quantity - %f where component_id = %d", lineId, x.Quantity, x.Component_id))
 		if err != nil {
 			fmt.Println("error in debit: ", err)
-			return nil, err
+			return err
 		}
-
 	}
-	return nil, nil
+	return nil
 }
-
 func CheckLaboratory(serial string) (string, error) {
 	response, err := http.PostForm("http://192.168.5.250:3002/labinfo", url.Values{
 		"serial": {serial}})
@@ -108,7 +100,6 @@ func (r *UserRepository) UpdateRemont(name string, id int) (interface{}, error) 
 
 	return nil, nil
 }
-
 func (r *UserRepository) CheckRole(route, role string) (int, error) {
 
 	var accept model.Role
@@ -121,7 +112,6 @@ func (r *UserRepository) CheckRole(route, role string) (int, error) {
 	}
 	return accept.ID, nil
 }
-
 func (r *UserRepository) GetRemont() (interface{}, error) {
 
 	type Remont struct {
@@ -210,7 +200,6 @@ func (r *UserRepository) GetRemontToday() (interface{}, error) {
 
 	return list, nil
 }
-
 func (r *UserRepository) GetRemontByDate(date1, date2 string) (interface{}, error) {
 
 	type Remont struct {
@@ -223,11 +212,6 @@ func (r *UserRepository) GetRemontByDate(date1, date2 string) (interface{}, erro
 	}
 
 	rows, err := r.store.db.Query(fmt.Sprintf(`
-	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
-	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id and r."input"::date>=to_date('%s', 'YYYY-MM-DD') and r."input"::date<=to_date('%s', 'YYYY-MM-DD')  order by r."input"
-	 `, date1, date2))
-
-	fmt.Println(fmt.Sprintf(`
 	select r.id, r.serial, to_char(r."input", 'DD-MM-YYYY') vaqt, c."name" as checkpoint, m."name" as model, d.defect_name as defect from remont r, checkpoints c, models m, defects d 
 	where r.status = 1 and d.id = r.defect_id and c.id = r.checkpoint_id and m.id = r.model_id and r."input"::date>=to_date('%s', 'YYYY-MM-DD') and r."input"::date<=to_date('%s', 'YYYY-MM-DD')  order by r."input"
 	 `, date1, date2))
@@ -259,7 +243,6 @@ func (r *UserRepository) GetRemontByDate(date1, date2 string) (interface{}, erro
 
 	return list, nil
 }
-
 func (r *UserRepository) GetLines() (interface{}, error) {
 
 	type Lines struct {
@@ -301,7 +284,6 @@ func (r *UserRepository) DeleteDefectsTypes(id int) (interface{}, error) {
 	defer rows.Close()
 	return nil, nil
 }
-
 func (r *UserRepository) AddDefectsTypes(id int, name string) (interface{}, error) {
 	rows, err := r.store.db.Query("insert into defects (defect_name, line_id) values ($1, $2)", name, id)
 	if err != nil {
@@ -311,7 +293,6 @@ func (r *UserRepository) AddDefectsTypes(id int, name string) (interface{}, erro
 	defer rows.Close()
 	return nil, nil
 }
-
 func (r *UserRepository) AddDefects(u *model.OtkAddDefect, name string) (interface{}, error) {
 
 	temp := u.Serial[0:6]
@@ -333,7 +314,6 @@ func (r *UserRepository) AddDefects(u *model.OtkAddDefect, name string) (interfa
 	defer rows.Close()
 	return nil, nil
 }
-
 func (r *UserRepository) GetDefectsTypes() (interface{}, error) {
 
 	type defectsTypes struct {
@@ -417,7 +397,6 @@ func (r *UserRepository) GetPackingTodaySerial() (interface{}, error) {
 
 	return last, nil
 }
-
 func (r *UserRepository) PackingSerialInput(serial, packing string) (interface{}, error) {
 
 	type Laboratory struct {
@@ -468,7 +447,6 @@ func (r *UserRepository) PackingSerialInput(serial, packing string) (interface{}
 
 	return result, nil
 }
-
 func (r *UserRepository) GetPackingTodayModels() (interface{}, error) {
 
 	type PackingTodayModels struct {
@@ -591,11 +569,8 @@ func (r *UserRepository) SerialInput(line int, serial string) (interface{}, erro
 			fmt.Println("from raspberry: ", req)
 			return nil, errors.New("sborkada reg qilinmagan")
 		}
-		// defer result.Close()
 		fmt.Println("check sborka in ppu result: ", check)
-		//select  product_id  from production p where serial = 'A1FA010003674' and checkpoint_id = 2
 	}
-
 	// check production to serial
 	if err := r.store.db.QueryRow("select product_id from production p where serial = $1 and  checkpoint_id = $2", serial, line).Scan(&prod_id.id); err == nil {
 		if _, err := r.store.db.Exec("update production set updated = now() where product_id = $1", prod_id.id); err != nil {
@@ -615,7 +590,7 @@ func (r *UserRepository) SerialInput(line int, serial string) (interface{}, erro
 			fmt.Println("SerialInput3 Setpin err: ", err)
 		}
 		defer rows.Close()
-		res, err2 := r.debitFromLine(modelInfo.id, line)
+		err2 := r.debitFromLine(modelInfo.id, line)
 		if err2 != nil {
 			fmt.Println("inputSerial debit err: ", err2)
 		}
@@ -624,10 +599,7 @@ func (r *UserRepository) SerialInput(line int, serial string) (interface{}, erro
 			fmt.Println("SerialInput rasp err: ", err)
 			return nil, err
 		}
-
 		fmt.Println("from raspberry: ", req)
-		fmt.Println("inputSerial debit res: ", res)
-
 	}
 	type respond struct {
 		Result string `json:"result"`
@@ -639,7 +611,6 @@ func (r *UserRepository) SerialInput(line int, serial string) (interface{}, erro
 
 	return result, nil
 }
-
 func (r *UserRepository) ComponentsAll() (interface{}, error) {
 	rows, err := r.store.db.Query("select c.available, c.id, c.code, c.\"name\", c2.\"name\" as Checkpoint, c2.id as checkpoint_id,  c.unit, c.specs, c.photo, to_char(c.\"time\", 'DD-MM-YYYY HH24:MI') \"time\", t.\"name\" as type, t.id as type_id, c.weight from components c join checkpoints c2 on c2.id = c.\"checkpoint\" join \"types\" t on t.id  = c.\"type\" order by c.code")
 	if err != nil {
@@ -666,7 +637,6 @@ func (r *UserRepository) ComponentsAll() (interface{}, error) {
 	}
 	return components, nil
 }
-
 func (r *UserRepository) Create(u *model.User) error {
 	if err := u.Validate(); err != nil {
 		fmt.Println("Create err: ", err)
@@ -684,7 +654,6 @@ func (r *UserRepository) Create(u *model.User) error {
 		u.EncryptedPassword,
 	).Scan(&u.ID)
 }
-
 func (r *UserRepository) Find(id int) (*model.User, error) {
 	u := &model.User{}
 	if err := r.store.db.QueryRow(
@@ -706,7 +675,6 @@ func (r *UserRepository) Find(id int) (*model.User, error) {
 
 	return u, nil
 }
-
 func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
 	u := &model.User{}
 	if err := r.store.db.QueryRow(
@@ -728,7 +696,6 @@ func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
 
 	return u, nil
 }
-
 func (r *UserRepository) GetLast(line int) (interface{}, error) {
 
 	type Last struct {
@@ -769,9 +736,7 @@ func (r *UserRepository) GetLast(line int) (interface{}, error) {
 		return last, err
 	}
 	return last, nil
-
 }
-
 func (r *UserRepository) GetToday(line int) (interface{}, error) {
 
 	type Count struct {
@@ -876,7 +841,6 @@ func (r *UserRepository) GetSectorBalance(line int) (interface{}, error) {
 	}
 	return balance, nil
 }
-
 func (r *UserRepository) GetByDate(date1, date2 string, line int) (interface{}, error) {
 
 	type Count struct {
@@ -905,7 +869,6 @@ func (r *UserRepository) GetByDate(date1, date2 string, line int) (interface{}, 
 			fmt.Println("GetToday3 err: ", err)
 			return count, err
 		}
-		break
 	default:
 		rows, err := r.store.db.Query("select count(*) from production where \"time\"::date>=to_date($1, 'YYYY-MM-DD') and \"time\"::date<=to_date($2, 'YYYY-MM-DD') and checkpoint_id = $3", date1, date2, line)
 		if err != nil {
@@ -925,13 +888,11 @@ func (r *UserRepository) GetByDate(date1, date2 string, line int) (interface{}, 
 			fmt.Println("GetToday3 err: ", err)
 			return count, err
 		}
-		break
 
 	}
 
 	return count, nil
 }
-
 func (r *UserRepository) GetByDateModels(date1, date2 string, line int) (interface{}, error) {
 
 	type ByModel struct {
@@ -965,7 +926,6 @@ func (r *UserRepository) GetByDateModels(date1, date2 string, line int) (interfa
 			fmt.Println("GetTodayModels3 err: ", err)
 			return byModel, err
 		}
-		break
 	default:
 		rows, err := r.store.db.Query("select p.model_id, m.\"name\", COUNT(*) FROM production p, models m where p.\"time\"::date>=to_date($1, 'YYYY-MM-DD') and p.\"time\"::date<=to_date($2, 'YYYY-MM-DD') and checkpoint_id = $3 and m.id = p.model_id group by m.\"name\", p.model_id", date1, date2, line)
 		if err != nil {
@@ -989,7 +949,6 @@ func (r *UserRepository) GetByDateModels(date1, date2 string, line int) (interfa
 			fmt.Println("GetTodayModels3 err: ", err)
 			return byModel, err
 		}
-		break
 	}
 
 	return byModel, nil
@@ -1028,4 +987,81 @@ func (r *UserRepository) GetByDateSerial(date1, date2 string) (interface{}, erro
 		return serial, err
 	}
 	return serial, nil
+}
+func (r *UserRepository) GetInfoBySerial(serial string) (interface{}, error) {
+	type Packing struct {
+		Ref_serial     string `json:"ref_serial"`
+		Packing_serial string `json:"packing_serial"`
+		Packing_time   string `json:"packing_time"`
+	}
+	type Production struct {
+		Checkpoint string `json:"checkpoint"`
+		Time       string `json:"time"`
+	}
+	type Info struct {
+		PackingInfo    []Packing
+		ProductionInfo []Production
+	}
+
+	var packing []Packing
+
+	rows1, err := r.store.db.Query(fmt.Sprintf(`
+	select p.serial as ref_serial, p.packing as packing_serial, to_char(p."time" , 'DD-MM-YYYY HH24:MI') "time" from packing p
+	where p.serial = '%s' `, serial))
+	if err != nil {
+		fmt.Println("GetInfoBySerial err: ", err)
+		return nil, errors.New("no data")
+	}
+	defer rows1.Close()
+	for rows1.Next() {
+		var comp Packing
+		if err := rows1.Scan(&comp.Ref_serial, &comp.Packing_serial, &comp.Packing_time); err != nil {
+			fmt.Println("GetInfoBySerial production rows err: ", err)
+			return packing, errors.New("no data")
+		}
+		packing = append(packing, comp)
+	}
+	if err = rows1.Err(); err != nil {
+		fmt.Println("GetInfoBySerial  err: ", err)
+		return nil, errors.New("no data")
+	}
+
+	// err := r.store.db.QueryRow(fmt.Sprintf(`
+	// select p.serial as ref_serial, p.packing as packing_serial, to_char(p."time" , 'DD-MM-YYYY HH24:MI') "time" from packing p
+	// where p.serial = '%s' `, serial)).Scan(&packing.Ref_serial, &packing.Packing_serial, &packing.Packing_time)
+	// if err != nil {
+	// 	fmt.Println("GetInfoBySerial get packing info err: ", err)
+	// 	return nil, errors.New("no data")
+	// }
+	var production []Production
+	// rows, err := r.store.db.Query("(select p.serial, m.\"name\" as model, p.\"time\", c.\"name\" as sector  from packing p, models m, checkpoints c  where p.\"time\"::date>=to_date($1, 'YYYY-MM-DD') and p.\"time\"::date<=to_date($2, 'YYYY-MM-DD') and m.id = p.model_id and c.id = p.checkpoint_id  order by p.model_id) union ALL (select p2.serial, m.\"name\" as model, p2.\"time\", c.\"name\" as sector  from production p2, models m, checkpoints c where p2.\"time\"::date>=to_date($1, 'YYYY-MM-DD') and p2.\"time\"::date<=to_date($2, 'YYYY-MM-DD') and m.id = p2.model_id and c.id = p2.checkpoint_id order by p2.model_id, p2.checkpoint_id)", date1, date2)
+	rows, err := r.store.db.Query(fmt.Sprintf(`
+	select c."name" as checkpoint , to_char(p2."time" , 'DD-MM-YYYY HH24:MI') "time"  from production p2, checkpoints c  
+	where p2.serial = '%s'
+	and p2.checkpoint_id = c.id `, serial))
+	if err != nil {
+		fmt.Println("GetInfoBySerial err: ", err)
+		return nil, errors.New("no data")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var comp Production
+		if err := rows.Scan(&comp.Checkpoint, &comp.Time); err != nil {
+			fmt.Println("GetInfoBySerial production rows err: ", err)
+			return production, errors.New("no data")
+		}
+		production = append(production, comp)
+	}
+	if err = rows.Err(); err != nil {
+		fmt.Println("GetInfoBySerial  err: ", err)
+		return nil, errors.New("no data")
+	}
+
+	var productInfo Info
+	productInfo.PackingInfo = packing
+	productInfo.ProductionInfo = production
+
+	fmt.Println("product info: ", productInfo)
+
+	return productInfo, nil
 }

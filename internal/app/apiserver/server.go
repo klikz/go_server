@@ -154,11 +154,14 @@ func (s *server) configureRouter() {
 	//routes for only production processes
 	//{"line": int, "serial": string}
 	withoutchecktoken.HandleFunc("/production/serial/input", s.handleSerialInput()).Methods("POST")
+
 	//"serial": string, "packing": string}
 	withoutchecktoken.HandleFunc("/production/packing/serial/input", s.handlePackingSerialInput()).Methods("POST")
 
+	//{"serial":string}
+	withoutchecktoken.HandleFunc("/checkserial", s.handleGetInfoBySerial()).Methods("POST")
+
 	//route for registering
-	// register.Use(s.authRegister)
 	checktoken.HandleFunc("/register", s.handleRegister()).Methods("POST")
 
 	s.router.Use(s.setRequestID)
