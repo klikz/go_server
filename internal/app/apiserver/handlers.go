@@ -414,7 +414,7 @@ func (s *server) handleComponents() http.HandlerFunc {
 }
 func (s *server) handleGetInfoBySerial() http.HandlerFunc {
 	type Serial struct {
-		Serial string `json"serial"`
+		Serial string `json:"serial"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u = r.Context().Value(ctxKeyUser).(*model.ReqBody)
