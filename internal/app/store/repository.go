@@ -33,4 +33,5 @@ type UserRepository interface {
 	UpdateRemont(string, int) (interface{}, error)
 	CheckRole(string, string) (int, error)
 	GetInfoBySerial(string) (interface{}, error)
+	Galileo(*model.Galileo) (interface{}, error)
 }

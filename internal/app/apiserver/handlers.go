@@ -440,3 +440,26 @@ func (s *server) handleGetInfoBySerial() http.HandlerFunc {
 		s.respond(w, r, http.StatusOK, compontnts)
 	}
 }
+func (s *server) handleGalileo() http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var u = r.Context().Value(ctxKeyUser).(*model.ReqBody)
+		req := &model.Galileo{}
+		if err := json.Unmarshal([]byte(u.Body), &req); err != nil {
+			fmt.Println("handleSerialInput error decode: ", u.Body, "error: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+		_, err := s.store.User().Galileo(req)
+		if err != nil {
+			fmt.Println("handleGetInfoBySerial err: ", err)
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		sendData := &respondData{
+			Result: "ok",
+		}
+		s.respond(w, r, http.StatusCreated, sendData)
+	}
+}

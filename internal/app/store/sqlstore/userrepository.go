@@ -1065,3 +1065,16 @@ func (r *UserRepository) GetInfoBySerial(serial string) (interface{}, error) {
 
 	return productInfo, nil
 }
+func (r *UserRepository) Galileo(g *model.Galileo) (interface{}, error) {
+
+	fmt.Println(g)
+	if g.Quantity != 0 {
+		rows, err := r.store.db.Query(fmt.Sprintf(`insert into galileo (serial, opcode, "type", "result", progquantity, quantity, cycletotaltime, "time") values ('%s', '%s', '%s', '%s', %f, %f, %d, '%s')`, g.Barcode, g.OpCode, g.TypeFreon, g.Result, g.ProgQuantity, g.Quantity, g.CycleTotalTime, g.Time))
+		if err != nil {
+			fmt.Println("Adddefects err: ", err)
+			return nil, err
+		}
+		defer rows.Close()
+	}
+	return nil, nil
+}

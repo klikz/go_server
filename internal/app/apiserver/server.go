@@ -161,6 +161,9 @@ func (s *server) configureRouter() {
 	//{"serial":string}
 	withoutchecktoken.HandleFunc("/checkserial", s.handleGetInfoBySerial()).Methods("POST")
 
+	//data from galileo {model.Galileo}
+	withoutchecktoken.HandleFunc("/galileo/input", s.handleGalileo()).Methods("POST")
+
 	//route for registering
 	checktoken.HandleFunc("/register", s.handleRegister()).Methods("POST")
 

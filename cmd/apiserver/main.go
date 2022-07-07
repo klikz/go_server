@@ -7,6 +7,9 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"premier_api/internal/app/apiserver"
+
+	pm2io "github.com/keymetrics/pm2-io-apm-go"
+	"github.com/keymetrics/pm2-io-apm-go/structures"
 )
 
 var (
@@ -29,5 +32,13 @@ func main() {
 	if err := apiserver.Start(config); err != nil {
 		log.Fatal(err)
 	}
+	pm2 := pm2io.Pm2Io{
+		Config: &structures.Config{
+			PublicKey:  "myPublic",   // define the public key given in the dashboard
+			PrivateKey: "myPrivate",  // define the private key given in the dashboard
+			Name:       "MainServer", // define an application name
+		},
+	}
+	pm2.Start()
 
 }
